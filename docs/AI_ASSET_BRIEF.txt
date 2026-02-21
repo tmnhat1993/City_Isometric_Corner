@@ -1,0 +1,124 @@
+ISOCITY — AI ASSET BRIEF (ISOMETRIC VIEW)
+=========================================
+Use this brief when prompting AI image tools to generate building/park/construction assets. The game uses a fixed isometric view; assets must match this view to align correctly.
+
+-----------------------------------------
+1. VIEW & COORDINATE SYSTEM (from code)
+-----------------------------------------
+
+- Projection: Isometric 2D. One tile is a diamond shape with horizontal span 64 units and vertical span 32 units (2:1 ratio). Grid is 12x12 tiles; each building occupies a 4x4 tile block.
+
+- Screen direction (how the grid maps to the screen):
+  * North = top of the screen (farthest from camera)
+  * South = bottom of the screen (closest to camera)
+  * East  = right side of the screen
+  * West  = left side of the screen
+
+- Grid-to-screen mapping (concept only; no need to implement):
+  x = (col - row) * 32 + originX
+  y = (col + row) * 16 + originY
+  So increasing row moves the point down-right; increasing col moves it down-left. The view is equivalent to looking down at the grid from an angle.
+
+- Camera / viewing angle: Top-down isometric. The scene is viewed as if the camera is above and in front of the intersection—roughly from the Southeast looking Northwest. The two building faces that are most visible to the viewer are: (1) the face pointing South (toward the camera / bottom of screen), and (2) the face pointing East (to the right). Draw details (doors, windows, signs) with these two faces in mind.
+
+-----------------------------------------
+2. ANCHOR & COMPOSITION
+-----------------------------------------
+
+- Anchor in game: bottom-center (0.5, 1). The game places each asset by pinning the bottom-center point to a position derived from the grid (getBlockDiamond); optional debug offsets (offsetX, offsetY) can be saved for fine-tuning. No need to design for fixed pixel positions.
+
+- For the AI-generated image:
+  * The base of the building (where it meets the ground) must sit on the BOTTOM EDGE of the image. No empty transparent strip below the base.
+  * The building should be horizontally centered in the frame so that the middle of the base is the center of the image.
+  * The asset extends upward from that bottom edge; the sky or background can be transparent above.
+
+-----------------------------------------
+3. FOUR ASSETS (subject & position in scene)
+-----------------------------------------
+
+Asset A — NORTH BUILDING (office tower)
+- Position in scene: Top of the screen (far side of the intersection, North side).
+- Subject: Modern office tower, 5–6 floors, glass facade, flat roof. Can have antenna or small rooftop elements. Corporate look.
+- Visible faces: South face (toward viewer) and East face (right) should read clearly. North and West are back/side.
+
+Asset B — EAST BUILDING (mart / restaurant)
+- Position in scene: Right side of the screen (East side of the intersection).
+- Subject: Low-rise commercial building, 2–3 floors, brick or warm materials, pitched or flat roof. Shop, restaurant, or mart. Can have signage, awning, or entrance on the visible sides.
+- Visible faces: South face (toward viewer) and East face (right). Door/window detail on these faces.
+
+Asset C — WEST BUILDING (park)
+- Position in scene: Left side of the screen (West side of the intersection).
+- Subject: Park or green space, not a tall building. Flat or gently varied terrain: trees, bushes, path, maybe a small fountain or benches. Low height; no large structures.
+- Visible faces: Same isometric convention; the park “block” is seen from the same Southeast viewing angle. Trees and elements should follow the same perspective.
+
+Asset D — SOUTH BUILDING (construction site)
+- Position in scene: Bottom of the screen (near side of the intersection, South side).
+- Subject: Construction site: low foundation, scaffolding, barriers, maybe a small crane, materials, warning signs. Low height so it does not block the view; mostly 1–2 “floors” of construction.
+- Visible faces: South face (toward viewer) and East face (right). Construction equipment and fencing on these sides.
+
+-----------------------------------------
+4. STYLE & FORMAT (recommendations for AI output)
+-----------------------------------------
+
+- Style: Consistent across all four (e.g. all pixel art, or all flat illustration, or all low-poly). Same lighting direction and color temperature so they feel like one scene.
+- Transparency: PNG with transparent background. Base of buildings/ground can be opaque; sky and non-building areas transparent.
+- No fixed resolution required; the game scales assets. Keep proportions and the bottom-center anchor in mind so that after scaling, the base still aligns.
+
+-----------------------------------------
+5. EXAMPLE PROMPT PHRASES (for AI tools)
+-----------------------------------------
+
+You can paste or adapt these into your AI image prompt:
+
+- "Isometric 2:1 view, top-down angle as if viewing from the Southeast. North is top of image, South is bottom (toward viewer), East is right, West is left."
+- "Building base aligned to the bottom edge of the image, horizontally centered. No empty space below the base."
+- "Two main visible faces: the face toward the viewer (South) and the face to the right (East). Details like windows and doors on these two faces."
+- For North: "Isometric modern office tower, 5–6 floors, glass facade, flat roof, view from Southeast, base at bottom center of frame."
+- For East: "Isometric low-rise shop or restaurant, 2–3 floors, brick or warm materials, signage, view from Southeast, base at bottom center."
+- For West: "Isometric small park, trees and greenery, flat terrain, maybe fountain or path, view from Southeast, ground at bottom center."
+- For South: "Isometric construction site, low foundation, scaffolding, barriers, small crane, view from Southeast, base at bottom center."
+
+-----------------------------------------
+6. VEHICLE ASSETS (multi-direction)
+-----------------------------------------
+
+Vehicles move on two road axes at the intersection. The game needs the same vehicle type drawn in four driving directions so it can face the correct way on each road and each lane. Use the same isometric 2:1 view and Southeast viewing angle as buildings.
+
+- Road axes (from code):
+  * Axis 1 — North–South: one lane runs from top of screen toward bottom (South), the other from bottom toward top (North). On the ground this is the line Southwest ↔ Northeast. So one direction is “from Southwest toward Northeast,” the other “from Northeast toward Southwest.”
+  * Axis 2 — East–West: one lane runs from left toward right (East), the other from right toward left (West). On the ground this is the line Southeast ↔ Northwest. So one direction is “from Southeast toward Northwest,” the other “from Northwest toward Southeast.”
+
+- Required four facing directions (world / screen):
+  1. Facing NORTHEAST — vehicle’s front points toward top-right of the image (moving from Southwest to Northeast).
+  2. Facing SOUTHWEST — vehicle’s front points toward bottom-left of the image (moving from Northeast to Southwest).
+  3. Facing NORTHWEST — vehicle’s front points toward top-left of the image (moving from Southeast to Northwest).
+  4. Facing SOUTHEAST — vehicle’s front points toward bottom-right of the image (moving from Northwest to Southeast).
+
+- View and anchor for vehicles:
+  * Same camera as buildings: isometric 2:1, viewed from above as if from the Southeast. The vehicle is a small object on the road; roof and the two visible sides (South and East) follow the same perspective.
+  * Anchor: bottom-center (0.5, 1). The point where the tires meet the road should sit on the BOTTOM EDGE of the image, centered horizontally. No transparent strip below the wheels.
+  * Vehicle should be horizontally centered. It can be drawn at a consistent scale (e.g. one vehicle fits in about one tile footprint in the game); exact pixel size is flexible as the game will scale.
+
+- Suggested vehicle set (one type, four directions):
+  * One vehicle type (e.g. sedan, or a small mix: sedan, van, pickup) drawn in all four orientations above. Each image = one direction (Northeast, Southwest, Northwest, Southeast). So 4 images per vehicle type.
+  * Style: Match the building style (e.g. same pixel size or same flat/shaded look). Same lighting (e.g. sun from one side). Transparent background; wheels/underside can touch the bottom edge.
+
+- Example prompt phrases for AI (vehicles):
+  * "Isometric 2:1 view from Southeast. Small car (sedan), front of car pointing toward the top-right of the image (facing Northeast). Bottom-center of car at bottom edge of frame, transparent background."
+  * "Same isometric view, same car, front of car pointing toward the bottom-left (facing Southwest). Base of wheels on bottom edge, centered."
+  * "Same isometric view, same car, front of car pointing toward the top-left (facing Northwest). Base of wheels on bottom edge, centered."
+  * "Same isometric view, same car, front of car pointing toward the bottom-right (facing Southeast). Base of wheels on bottom edge, centered."
+  * For variety: "Isometric 2:1, view from Southeast, delivery van / pickup truck, four separate images: one with front facing Northeast, one Southwest, one Northwest, one Southeast. Each image: vehicle centered, wheels on bottom edge, transparent background."
+
+- Naming suggestion for export:
+  * vehicle_sedan_ne.png, vehicle_sedan_sw.png, vehicle_sedan_nw.png, vehicle_sedan_se.png (or use “facing_northeast” etc. in the filename).
+
+-----------------------------------------
+7. WEATHER ASSETS (optional)
+-----------------------------------------
+
+- lightning-effect.jpg: Full-screen lightning flash image for heavy rain. Used in background layer; game applies random X, horizontal flip, and scale (0.75–2) with center-top origin per flash.
+- snowflake.png: Single snowflake image for “large” snow particles. Game displays it at ~5× the size of small snow circles; same fall + wobble animation as normal snow. Transparent background recommended.
+
+=========================================
+End of brief. Buildings: one per subject (North, East, West, South). Vehicles: four per type (NE, SW, NW, SE). Weather: lightning-effect.jpg, snowflake.png (optional).
