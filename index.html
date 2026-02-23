@@ -6,11 +6,26 @@
   <title>IsoCity</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <div id="canvas-container"></div>
+  <footer class="app-footer">
+    <span class="app-version">v0.1</span>
+    <div class="app-footer-row">
+      <span class="app-info" id="app-info-btn" title="Giới thiệu">ℹ</span>
+      <a href="mailto:tmnhat1993@gmail.com" class="app-credit">#Nihato</a>
+    </div>
+  </footer>
+  <div id="app-info-popup" class="app-info-popup" aria-hidden="true">
+    <div class="app-info-popup-overlay"></div>
+    <div class="app-info-popup-dialog">
+      <p class="app-info-popup-text">Ứng dụng này được xây dựng dưới sự hỗ trợ bởi AI.</p>
+      <p class="app-info-popup-text">Cảm ơn bạn đã dành thời gian ghé qua!</p>
+      <button type="button" class="app-info-popup-close">Đóng</button>
+    </div>
+  </div>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

@@ -20,14 +20,42 @@ function getSedanPath(color, facingKey) {
   const f = SEDAN_FACINGS.find((x) => x.key === facingKey)
   return `/img/sedan-assets/sedan-${color}-${f ? f.file : facingKey}.png`
 }
-import { initDebugModal } from './ui/DebugModal.js'
-import { initDebugTilePicker } from './ui/DebugTilePicker.js'
 import { initWeatherDayNightFloating } from './ui/WeatherDayNightFloating.js'
+import { initDayNightCycle } from './environment/DayNightCycle.js'
+import { initBuildingWindowLights } from './environment/BuildingWindowLights.js'
+import { initWelcomeModal } from './ui/WelcomeModal.js'
+import { initTimeDisplay } from './ui/TimeDisplay.js'
+import { initTodayTasksPanel } from './ui/TodayTasksPanel.js'
+import { initTaskHistory } from './ui/TaskHistory.js'
+import { initSettingsPanel } from './ui/SettingsPanel.js'
+import { initFloatingActionButtons } from './ui/FloatingActionButtons.js'
+import { tickFps, initFpsMonitor } from './utils/FpsMonitor.js'
+import { setStorageErrorHandler } from './utils/Storage.js'
+import { showToast } from './ui/Toast.js'
 import { getWeather } from './utils/WeatherState.js'
 import { getDayNightMode } from './utils/DayNightState.js'
 import { buildWeatherLayer } from './world/WeatherLayer.js'
 import { updateWeatherBackground } from './world/WeatherBackground.js'
 import { getWeatherFilter } from './world/WeatherFilter.js'
+
+function initAppInfoPopup() {
+  const btn = document.getElementById('app-info-btn')
+  const popup = document.getElementById('app-info-popup')
+  if (!btn || !popup) return
+  const overlay = popup.querySelector('.app-info-popup-overlay')
+  const closeBtn = popup.querySelector('.app-info-popup-close')
+  function open() {
+    popup.classList.add('is-open')
+    popup.setAttribute('aria-hidden', 'false')
+  }
+  function close() {
+    popup.classList.remove('is-open')
+    popup.setAttribute('aria-hidden', 'true')
+  }
+  btn.addEventListener('click', open)
+  closeBtn?.addEventListener('click', close)
+  overlay?.addEventListener('click', close)
+}
 
 async function main() {
   const canvasContainer = document.getElementById('canvas-container')
@@ -131,8 +159,19 @@ async function main() {
 
   setOrigin(originX, originY)
 
-  initDebugModal()
+  setStorageErrorHandler(showToast)
+  initAppInfoPopup()
   initWeatherDayNightFloating()
+  initDayNightCycle()
+  initBuildingWindowLights()
+  initWelcomeModal()
+  initTimeDisplay()
+  initTodayTasksPanel()
+  initTaskHistory()
+  const settingsPanel = initSettingsPanel()
+  initFloatingActionButtons(null, settingsPanel)
+  app.ticker.add(() => tickFps(performance.now()))
+  initFpsMonitor(false)
 
   const worldContainer = getWorldContainer()
   const weatherContainer = getWeatherContainer()
@@ -158,7 +197,7 @@ async function main() {
   function refreshWeatherVisuals() {
     const weather = getWeather()
     updateWeatherBackground(getBackgroundContainer(), weather)
-    worldContainer.filters = [getWeatherFilter(weather)]
+    worldContainer.filters = [getWeatherFilter(weather, getDayNightMode())]
     if (weatherDestroy) weatherDestroy()
     weatherDestroy = buildWeatherLayer(weatherContainer, weather, lightningTexture, getBackgroundContainer(), snowflakeTexture).destroy
   }
@@ -173,9 +212,6 @@ async function main() {
   // Init camera (pan + zoom)
   initCamera(canvasContainer)
   centerCamera(screenW, screenH)
-
-  // Debug: click tile → hiện tọa độ (col, row) để gán filename ảnh
-  initDebugTilePicker()
 
   // Handle resize (origin làm tròn để tránh lệch sub-pixel giữa Chrome và Cursor)
   EventBus.on('resize', ({ width, height }) => {

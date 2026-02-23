@@ -1,13 +1,40 @@
-import { Container, Sprite } from 'pixi.js'
+import { Container, Sprite, Graphics } from 'pixi.js'
 import { gridToScreen, TILE_W } from '../core/GridSystem.js'
 import { getApp } from '../core/App.js'
 import { getDebugVehicleLaneOverrides } from '../utils/DebugVehicleLanes.js'
 import { getDebugVehicleStopOffsets } from '../utils/DebugVehicleStopOffsets.js'
 import { EventBus } from '../core/EventBus.js'
 import { updateTrafficLight, mustStopForLane } from './TrafficLightController.js'
+import { COLORS } from '../utils/Colors.js'
 
 /** Target width of sedan on screen (fraction of tile) */
 const SEDAN_DISPLAY_WIDTH = TILE_W * 0.85
+
+/** Offsets (x, y) in sprite space for headlights and taillights per facing (anchor 0.5,1 = bottom-center) */
+const LIGHT_OFFSETS = {
+  se: { head: [[8, 2], [12, 2]], tail: [[-8, -2], [-12, -2]] },
+  nw: { head: [[-8, -2], [-12, -2]], tail: [[8, 2], [12, 2]] },
+  sw: { head: [[-8, 2], [-12, 2]], tail: [[8, -2], [12, -2]] },
+  ne: { head: [[8, -2], [12, -2]], tail: [[-8, 2], [-12, 2]] },
+}
+
+function createCarLights(facing) {
+  const lights = new Graphics()
+  lights.label = 'carLights'
+  const o = LIGHT_OFFSETS[facing] || LIGHT_OFFSETS.se
+  const headColor = COLORS.headlight
+  const tailColor = COLORS.taillight
+  const r = 2.5
+  o.head.forEach(([x, y]) => {
+    lights.circle(x, y, r)
+    lights.fill({ color: headColor, alpha: 0.95 })
+  })
+  o.tail.forEach(([x, y]) => {
+    lights.circle(x, y, r * 0.9)
+    lights.fill({ color: tailColor, alpha: 0.85 })
+  })
+  return lights
+}
 
 /**
  * Lane definition: mỗi làn ứng đúng 1 tile đường (row 5/6 hoặc col 5/6).
@@ -75,6 +102,45 @@ export function buildVehicleLayer(textures = {}) {
   let stopOffsets = getDebugVehicleStopOffsets()
 
   const cars = []
+  /** Object pool: reuse sprite when cars despawn; lights recreated per acquire. */
+  const carPool = []
+  const MAX_POOL_SIZE = 24
+  function acquireCar(texture, facing, x, y) {
+    let sprite
+    if (carPool.length > 0) {
+      sprite = carPool.pop()
+      sprite.scale.set(1, 1)
+      sprite.texture = texture
+      const tw = texture.width || texture.frame?.width
+      if (tw > 0) sprite.scale.set(SEDAN_DISPLAY_WIDTH / tw)
+      sprite.removeChildren()
+      const lights = createCarLights(facing)
+lights.alpha = 0
+  sprite.addChild(lights)
+  sprite.x = x
+  sprite.y = y
+  sprite.visible = true
+  container.addChild(sprite)
+  return { sprite, lights }
+}
+sprite = new Sprite(texture)
+    sprite.anchor.set(0.5, 1)
+    if (sprite.width > 0) sprite.scale.set(SEDAN_DISPLAY_WIDTH / sprite.width)
+    const lights = createCarLights(facing)
+lights.alpha = 0
+  sprite.addChild(lights)
+  sprite.x = x
+  sprite.y = y
+  container.addChild(sprite)
+  return { sprite, lights }
+}
+function releaseCar(car) {
+    car.sprite.visible = false
+    if (container.children.includes(car.sprite)) container.removeChild(car.sprite)
+    if (carPool.length < MAX_POOL_SIZE) carPool.push(car.sprite)
+    else car.sprite.destroy({ children: true })
+  }
+
   const BASE_SPEED = 0.15
   /** Gia tốc khi từ dừng → chạy (progress/s²). Dừng luôn ngay lập tức (currentSpeed = 0). */
   const ACCELERATION = 0.45
@@ -95,16 +161,12 @@ export function buildVehicleLayer(textures = {}) {
     const progress = Math.max(0, Math.min(desiredSpawn, minProgressInLane - CLEARANCE_PROGRESS))
     if (carsInLane.length > 0 && minProgressInLane - progress < CLEARANCE_PROGRESS) return
 
-    const sprite = new Sprite(texture)
-    sprite.anchor.set(0.5, 1)
-    if (sprite.width > 0) sprite.scale.set(SEDAN_DISPLAY_WIDTH / sprite.width)
-    const speed = BASE_SPEED * (0.8 + Math.random() * 0.4)
     const { x, y } = getPositionOnLane(laneId, progress)
-    sprite.x = x
-    sprite.y = y
-    container.addChild(sprite)
+    const { sprite, lights } = acquireCar(texture, facing, x, y)
+    if (!container.children.includes(sprite)) container.addChild(sprite)
+    const speed = BASE_SPEED * (0.8 + Math.random() * 0.4)
     /** currentSpeed: tốc độ thực mỗi frame; dừng = 0, chạy tăng dần tới speed. */
-    cars.push({ sprite, laneId, progress, speed, currentSpeed: 0 })
+    cars.push({ sprite, lights, laneId, progress, speed, currentSpeed: 0 })
   }
 
   const app = getApp()
@@ -185,7 +247,7 @@ export function buildVehicleLayer(textures = {}) {
       }
 
       if (nextProgress >= 1) {
-        car.sprite.destroy()
+        releaseCar(car)
         cars.splice(i, 1)
         continue
       }
@@ -197,6 +259,7 @@ export function buildVehicleLayer(textures = {}) {
       car.sprite.x = x + (o.offsetX ?? 0)
       car.sprite.y = y + (o.offsetY ?? 0)
       car.sprite.zIndex = car.sprite.y + car.progress * 1000
+      if (car.lights) car.lights.alpha = 0
     }
     container.sortChildren()
   }
@@ -216,6 +279,8 @@ export function buildVehicleLayer(textures = {}) {
     app.ticker.remove(update)
     EventBus.off('vehicleLaneOverridesChanged', onOverridesChanged)
     EventBus.off('vehicleStopOffsetsChanged', onStopOffsetsChanged)
+    carPool.forEach((s) => s.destroy({ children: true }))
+    carPool.length = 0
     container.destroy({ children: true })
   }
 

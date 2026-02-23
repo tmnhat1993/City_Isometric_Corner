@@ -11,9 +11,10 @@ const CONTAINER_ID = 'weather-daynight-floating'
 const WEATHER_OPTIONS = [
   { value: 'clear', label: 'Nắng' },
   { value: 'rain', label: 'Mưa nhỏ' },
-  { value: 'rain_heavy', label: 'Mưa lớn' },
+  { value: 'rain_heavy', label: 'Mưa Lớn' },
   { value: 'snow', label: 'Tuyết' },
-  { value: 'snow_blizzard', label: 'Tuyết lớn' },
+  { value: 'snow_heavy', label: 'Tuyết nặng' },
+  { value: 'snow_blizzard', label: 'Bão tuyết' },
 ]
 
 function updateActive(container) {
