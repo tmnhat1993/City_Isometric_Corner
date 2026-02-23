@@ -34,6 +34,7 @@ function ensureImgSubdirs(distImg) {
 }
 
 export default defineConfig({
+  // base tương đối để deploy đúng tại subpath (vd. .../City_Isometric_Corner/dist/)
   base: './',
   publicDir: 'public',
   build: {
