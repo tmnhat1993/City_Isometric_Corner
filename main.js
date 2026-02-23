@@ -40,24 +40,20 @@ import { getWeatherFilter } from './world/WeatherFilter.js'
 
 /**
  * Base URL cho deploy subpath (vd. GitHub Pages .../dist/).
- * Vite inject BASE_URL = './'; nếu không có thì lấy từ đường dẫn trang hiện tại.
+ * Luôn lấy từ document để request luôn trỏ đúng thư mục trang (tránh resolve theo file JS).
  */
-function getAssetBase() {
-  if (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) {
-    const b = String(import.meta.env.BASE_URL).replace(/\/$/, '')
-    return b || ''
-  }
-  if (typeof document !== 'undefined' && document.baseURI) {
-    const u = new URL(document.baseURI)
-    const pathname = u.pathname.replace(/\/[^/]*$/, '') || '/'
-    return pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
-  }
-  return ''
+function getAssetBaseUrl() {
+  if (typeof document === 'undefined' || !document.baseURI) return ''
+  const u = new URL(document.baseURI)
+  let dir = u.pathname
+  if (!dir.endsWith('/')) dir = dir.replace(/\/[^/]*$/, '') || '/'
+  if (!dir.endsWith('/')) dir += '/'
+  return u.origin + dir
 }
-const ASSET_BASE = getAssetBase()
 function assetPath(path) {
-  const p = path.startsWith('/') ? path : '/' + path
-  return ASSET_BASE ? (ASSET_BASE === '.' ? '.' + p : ASSET_BASE + p) : p
+  const p = path.startsWith('/') ? path.slice(1) : path
+  const base = getAssetBaseUrl()
+  return base ? base + p : '/' + p
 }
 
 function initAppInfoPopup() {
