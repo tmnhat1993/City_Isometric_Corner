@@ -29,6 +29,64 @@ html, body {
   display: block;
 }
 
+/* Preload overlay – hiển thị khi đang tải img */
+.preload-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10, 15, 30, 0.97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+.preload-overlay.preload--done {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.preload-content {
+  text-align: center;
+  padding: 2rem;
+  max-width: 320px;
+}
+.preload-spinner {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1.25rem;
+  border: 3px solid rgba(42, 74, 127, 0.6);
+  border-top-color: #4fc3f7;
+  border-radius: 50%;
+  animation: preload-spin 0.9s linear infinite;
+}
+@keyframes preload-spin {
+  to { transform: rotate(360deg); }
+}
+.preload-message {
+  font-size: 0.95rem;
+  color: #e0f0ff;
+  margin-bottom: 1rem;
+}
+.preload-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: rgba(42, 74, 127, 0.4);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+.preload-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #2a4a7f, #4fc3f7);
+  border-radius: 4px;
+  transition: width 0.25s ease;
+}
+.preload-percent {
+  font-size: 0.8rem;
+  color: rgba(224, 240, 255, 0.85);
+}
+
 /* Debug: một nút mở modal */
 .debug-modal-toggle-btn {
   position: fixed;
