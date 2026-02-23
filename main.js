@@ -38,12 +38,26 @@ import { buildWeatherLayer } from './world/WeatherLayer.js'
 import { updateWeatherBackground } from './world/WeatherBackground.js'
 import { getWeatherFilter } from './world/WeatherFilter.js'
 
-/** Base URL cho deploy subpath (vd. GitHub Pages .../dist/). Vite inject BASE_URL = './' */
-const ASSET_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL)
-  ? import.meta.env.BASE_URL.replace(/\/$/, '')
-  : ''
+/**
+ * Base URL cho deploy subpath (vd. GitHub Pages .../dist/).
+ * Vite inject BASE_URL = './'; nếu không có thì lấy từ đường dẫn trang hiện tại.
+ */
+function getAssetBase() {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) {
+    const b = String(import.meta.env.BASE_URL).replace(/\/$/, '')
+    return b || ''
+  }
+  if (typeof document !== 'undefined' && document.baseURI) {
+    const u = new URL(document.baseURI)
+    const pathname = u.pathname.replace(/\/[^/]*$/, '') || '/'
+    return pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+  }
+  return ''
+}
+const ASSET_BASE = getAssetBase()
 function assetPath(path) {
-  return ASSET_BASE ? ASSET_BASE + path : path
+  const p = path.startsWith('/') ? path : '/' + path
+  return ASSET_BASE ? (ASSET_BASE === '.' ? '.' + p : ASSET_BASE + p) : p
 }
 
 function initAppInfoPopup() {
@@ -79,22 +93,22 @@ async function main() {
   try {
     northTexture = await Assets.load(assetPath(BUILDING_NORTH_IMAGE_PATH))
   } catch (e) {
-    console.warn('Building north image not found at', BUILDING_NORTH_IMAGE_PATH, '- using procedural drawing.')
+    console.warn('Building north image not found at', assetPath(BUILDING_NORTH_IMAGE_PATH), '- using procedural drawing.')
   }
   try {
     eastTexture = await Assets.load(assetPath(MART_EAST_IMAGE_PATH))
   } catch (e) {
-    console.warn('Mart east image not found at', MART_EAST_IMAGE_PATH, '- using procedural drawing.')
+    console.warn('Mart east image not found at', assetPath(MART_EAST_IMAGE_PATH), '- using procedural drawing.')
   }
   try {
     westTexture = await Assets.load(assetPath(PARK_WEST_IMAGE_PATH))
   } catch (e) {
-    console.warn('Park west image not found at', PARK_WEST_IMAGE_PATH, '- using procedural drawing.')
+    console.warn('Park west image not found at', assetPath(PARK_WEST_IMAGE_PATH), '- using procedural drawing.')
   }
   try {
     southTexture = await Assets.load(assetPath(PARK_SOUTH_IMAGE_PATH))
   } catch (e) {
-    console.warn('Park south image not found at', PARK_SOUTH_IMAGE_PATH, '- South slot empty.')
+    console.warn('Park south image not found at', assetPath(PARK_SOUTH_IMAGE_PATH), '- South slot empty.')
   }
 
   const ROAD_TILE_VARIANTS = ['ne', 'nw', 'se', 'sw', 'se-cross', 'se-cross-2', 'ne-cross', 'ne-cross-2', 'nw-cross', 'nw-cross-2', 'sw-cross', 'sw-cross-2']
@@ -115,7 +129,7 @@ async function main() {
       const path = customRoadPaths[v] ?? assetPath(`/img/road-tile/road-${v}.png`)
       roadTileTextures[v] = await Assets.load(path)
     } catch (e) {
-      if (!optionalVariants.includes(v)) console.warn(`Road tile /img/road-tile/road-${v}.png not found – variant ${v} will use solid color.`)
+      if (!optionalVariants.includes(v)) console.warn('Road tile', assetPath(`/img/road-tile/road-${v}.png`), 'not found – variant', v, 'will use solid color.')
     }
   }
   const hasAnyRoadTexture = ['ne', 'nw', 'se', 'sw'].some((v) => roadTileTextures[v])
@@ -151,7 +165,7 @@ async function main() {
       throw new Error('No sedan color set loaded')
     }
   } catch (e) {
-    console.warn('Sedan assets not found under /img/sedan-assets/ – vehicles disabled.', e)
+    console.warn('Sedan assets not found at', assetPath('/img/sedan-assets/'), '– vehicles disabled.', e)
   }
 
   // Calculate origin so the grid is centered on screen
@@ -192,13 +206,13 @@ async function main() {
   try {
     lightningTexture = await Assets.load(assetPath('/img/lightning-effect.jpg'))
   } catch (e) {
-    console.warn('Lightning effect image not found at /img/lightning-effect.jpg – using white flash.')
+    console.warn('Lightning effect image not found at', assetPath('/img/lightning-effect.jpg'), '– using white flash.')
   }
   let snowflakeTexture = null
   try {
     snowflakeTexture = await Assets.load(assetPath('/img/snowflake.png'))
   } catch (e) {
-    console.warn('Snowflake image not found at /img/snowflake.png – bông tuyết to sẽ không hiển thị.')
+    console.warn('Snowflake image not found at', assetPath('/img/snowflake.png'), '– bông tuyết to sẽ không hiển thị.')
   }
 
   let weatherDestroy = null
