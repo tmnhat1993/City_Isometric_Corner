@@ -18,7 +18,7 @@ const SEDAN_FACINGS = [
 ]
 function getSedanPath(color, facingKey) {
   const f = SEDAN_FACINGS.find((x) => x.key === facingKey)
-  return `/img/sedan-assets/sedan-${color}-${f ? f.file : facingKey}.png`
+  return assetPath(`/img/sedan-assets/sedan-${color}-${f ? f.file : facingKey}.png`)
 }
 import { initWeatherDayNightFloating } from './ui/WeatherDayNightFloating.js'
 import { initDayNightCycle } from './environment/DayNightCycle.js'
@@ -37,6 +37,25 @@ import { getDayNightMode } from './utils/DayNightState.js'
 import { buildWeatherLayer } from './world/WeatherLayer.js'
 import { updateWeatherBackground } from './world/WeatherBackground.js'
 import { getWeatherFilter } from './world/WeatherFilter.js'
+
+/**
+ * Base URL cho assets: thư mục chứa trang (dev: /, deploy: .../dist/).
+ * Dùng document.baseURI để khi chạy tại .../City_Isometric_Corner/dist/ thì request /img/... trỏ đúng .../dist/img/...
+ */
+function getAssetBaseUrl() {
+  if (typeof document === 'undefined' || !document.baseURI) return ''
+  const u = new URL(document.baseURI)
+  let dir = u.pathname
+  if (!dir.endsWith('/')) dir = dir.replace(/\/[^/]*$/, '') || '/'
+  if (!dir.endsWith('/')) dir += '/'
+  return u.origin + dir
+}
+/** URL đầy đủ cho asset (base + img/...) — đúng cả dev và deploy subpath. */
+function assetPath(path) {
+  const p = path.startsWith('/') ? path.slice(1) : path
+  const base = getAssetBaseUrl()
+  return base ? base + p : path
+}
 
 /** Cập nhật màn hình preload (0–100). Gọi với 100 thì ẩn overlay. */
 function getPreloadControls() {
@@ -88,46 +107,46 @@ async function main() {
   let westTexture = null
   let southTexture = null
   try {
-    northTexture = await Assets.load(BUILDING_NORTH_IMAGE_PATH)
+    northTexture = await Assets.load(assetPath(BUILDING_NORTH_IMAGE_PATH))
   } catch (e) {
-    console.warn('Building north image not found at', BUILDING_NORTH_IMAGE_PATH, '- using procedural drawing.')
+    console.warn('Building north image not found at', assetPath(BUILDING_NORTH_IMAGE_PATH), '- using procedural drawing.')
   }
   try {
-    eastTexture = await Assets.load(MART_EAST_IMAGE_PATH)
+    eastTexture = await Assets.load(assetPath(MART_EAST_IMAGE_PATH))
   } catch (e) {
-    console.warn('Mart east image not found at', MART_EAST_IMAGE_PATH, '- using procedural drawing.')
+    console.warn('Mart east image not found at', assetPath(MART_EAST_IMAGE_PATH), '- using procedural drawing.')
   }
   try {
-    westTexture = await Assets.load(PARK_WEST_IMAGE_PATH)
+    westTexture = await Assets.load(assetPath(PARK_WEST_IMAGE_PATH))
   } catch (e) {
-    console.warn('Park west image not found at', PARK_WEST_IMAGE_PATH, '- using procedural drawing.')
+    console.warn('Park west image not found at', assetPath(PARK_WEST_IMAGE_PATH), '- using procedural drawing.')
   }
   try {
-    southTexture = await Assets.load(PARK_SOUTH_IMAGE_PATH)
+    southTexture = await Assets.load(assetPath(PARK_SOUTH_IMAGE_PATH))
   } catch (e) {
-    console.warn('Park south image not found at', PARK_SOUTH_IMAGE_PATH, '- South slot empty.')
+    console.warn('Park south image not found at', assetPath(PARK_SOUTH_IMAGE_PATH), '- South slot empty.')
   }
   preload.setProgress(20)
 
   const ROAD_TILE_VARIANTS = ['ne', 'nw', 'se', 'sw', 'se-cross', 'se-cross-2', 'ne-cross', 'ne-cross-2', 'nw-cross', 'nw-cross-2', 'sw-cross', 'sw-cross-2']
   const roadTileTextures = {}
   const customRoadPaths = {
-    'se-cross': '/img/road-tile/road-se-cross.png',
-    'se-cross-2': '/img/road-tile/road-se-cross-2.png',
-    'ne-cross': '/img/road-tile/road-ne-cross.png',
-    'ne-cross-2': '/img/road-tile/road-ne-cross-2.png',
-    'nw-cross': '/img/road-tile/road-nw-cross.png',
-    'nw-cross-2': '/img/road-tile/road-nw-cross-2.png',
-    'sw-cross': '/img/road-tile/road-sw-cross.png',
-    'sw-cross-2': '/img/road-tile/road-sw-cross-2.png',
+    'se-cross': assetPath('/img/road-tile/road-se-cross.png'),
+    'se-cross-2': assetPath('/img/road-tile/road-se-cross-2.png'),
+    'ne-cross': assetPath('/img/road-tile/road-ne-cross.png'),
+    'ne-cross-2': assetPath('/img/road-tile/road-ne-cross-2.png'),
+    'nw-cross': assetPath('/img/road-tile/road-nw-cross.png'),
+    'nw-cross-2': assetPath('/img/road-tile/road-nw-cross-2.png'),
+    'sw-cross': assetPath('/img/road-tile/road-sw-cross.png'),
+    'sw-cross-2': assetPath('/img/road-tile/road-sw-cross-2.png'),
   }
   const optionalVariants = ['se-cross', 'se-cross-2', 'ne-cross', 'ne-cross-2', 'nw-cross', 'nw-cross-2', 'sw-cross', 'sw-cross-2']
   for (const v of ROAD_TILE_VARIANTS) {
     try {
-      const path = customRoadPaths[v] ?? `/img/road-tile/road-${v}.png`
+      const path = customRoadPaths[v] ?? assetPath(`/img/road-tile/road-${v}.png`)
       roadTileTextures[v] = await Assets.load(path)
     } catch (e) {
-      if (!optionalVariants.includes(v)) console.warn(`Road tile /img/road-tile/road-${v}.png not found – variant ${v} will use solid color.`)
+      if (!optionalVariants.includes(v)) console.warn('Road tile', assetPath(`/img/road-tile/road-${v}.png`), 'not found – variant', v, 'will use solid color.')
     }
   }
   const hasAnyRoadTexture = ['ne', 'nw', 'se', 'sw'].some((v) => roadTileTextures[v])
@@ -138,7 +157,7 @@ async function main() {
   const sidewalkCornerTextures = {}
   for (const key of ['ne', 'nw', 'sw', 'se']) {
     try {
-      sidewalkCornerTextures[key] = await Assets.load(`/img/road-tile/corner-${key}.png`)
+      sidewalkCornerTextures[key] = await Assets.load(assetPath(`/img/road-tile/corner-${key}.png`))
     } catch (e) {
       sidewalkCornerTextures[key] = null
     }
@@ -165,7 +184,7 @@ async function main() {
       throw new Error('No sedan color set loaded')
     }
   } catch (e) {
-    console.warn('Sedan assets not found under /img/sedan-assets/ – vehicles disabled.', e)
+    console.warn('Sedan assets not found at', assetPath('/img/sedan-assets/'), '– vehicles disabled.', e)
   }
   preload.setProgress(60)
 
@@ -205,15 +224,15 @@ async function main() {
 
   let lightningTexture = null
   try {
-    lightningTexture = await Assets.load('/img/lightning-effect.jpg')
+    lightningTexture = await Assets.load(assetPath('/img/lightning-effect.jpg'))
   } catch (e) {
-    console.warn('Lightning effect image not found at /img/lightning-effect.jpg – using white flash.')
+    console.warn('Lightning effect image not found at', assetPath('/img/lightning-effect.jpg'), '– using white flash.')
   }
   let snowflakeTexture = null
   try {
-    snowflakeTexture = await Assets.load('/img/snowflake.png')
+    snowflakeTexture = await Assets.load(assetPath('/img/snowflake.png'))
   } catch (e) {
-    console.warn('Snowflake image not found at /img/snowflake.png – bông tuyết to sẽ không hiển thị.')
+    console.warn('Snowflake image not found at', assetPath('/img/snowflake.png'), '– bông tuyết to sẽ không hiển thị.')
   }
   preload.setProgress(100)
 
